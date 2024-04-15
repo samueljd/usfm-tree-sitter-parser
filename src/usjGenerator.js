@@ -458,3 +458,4 @@ class USJGenerator {
   }
 }
 
+module.exports = USJGenerator;

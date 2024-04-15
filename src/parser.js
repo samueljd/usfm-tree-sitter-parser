@@ -1,10 +1,13 @@
-import Parser from "tree-sitter";
-import usfm from "tree-sitter-usfm3";
-import grammar from "tree-sitter-javascript";
+// import Parser from "tree-sitter";
+// import usfm from "tree-sitter-usfm3";
+// import grammar from "tree-sitter-javascript";
+
+const Parser = require("tree-sitter");
+const usfm = require("tree-sitter-usfm3");
 
 const parser = new Parser();
 parser.setLanguage(usfm);
-export class USFMParser {
+class USFMParser {
 
   constructor(usfmString) {
     this.usfm = usfmString;
@@ -31,7 +34,9 @@ export class USFMParser {
     return this.usfm;
   }
 }
-let sourceCode = '\\id GEN\n\\c 1\n\\p\n\\v 1 In the begining..\\v 2 asldkfjas';
+
+module.exports = USFMParser;
+let sourceCode = '\\id GEN\n\\c 1\n\\p\n\\v 1 In the begining..\\v 2';
 let parserObj = new USFMParser(sourceCode)
 console.log(parserObj.toSyntaxTree())
 console.log('--------------------------------------------------------')

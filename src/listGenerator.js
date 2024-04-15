@@ -49,3 +49,5 @@ class ListGenerator {
     }
   }
 }
+
+module.exports = ListGenerator;

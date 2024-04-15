@@ -2,3 +2,4 @@ node_modules
 .yalc
 yalc.lock
 tree-sitter-usfm3
+dist

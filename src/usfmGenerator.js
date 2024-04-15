@@ -74,3 +74,6 @@ const usjObj = {
 
 gen.usjToUsfm(usjObj);
 console.log(gen.usfmString);
+
+
+module.exports = USFMGenerator;

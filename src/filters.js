@@ -49,7 +49,7 @@ function excludeMarkersInUsj(inputUsj, excludeMarkers, combineTexts = true, excl
   let thisMarker = 'marker' in inputUsj ? inputUsj.marker.replace(trailingNumPattern, '') : '';
   let thisMarkerNeeded = true;
   let innerContentNeeded = true;
-  let excludedParent = false;
+  excludedParent = false;
 
   if (cleanedMarkers.includes(thisMarker)) {
     thisMarkerNeeded = false;
@@ -110,3 +110,8 @@ function includeMarkersInUsj(inputUsj, includeMarkers, combineTexts = true, excl
   }
   return innerContentNeeded ? cleanedKids : [];
 }
+
+module.exports = {
+  excludeMarkersInUsj,
+  includeMarkersInUsj
+};

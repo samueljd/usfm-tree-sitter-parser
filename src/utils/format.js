@@ -9,4 +9,4 @@ const Format = {
   USFM: "usfm"
 };
 
-export default Format;
+module.exports = Format;

@@ -13,4 +13,4 @@ const Filter = {
   // INNER_CONTENT: ["content-in-excluded-parent"]
 };
 
-export default Filter;
+module.exports = Filter;
