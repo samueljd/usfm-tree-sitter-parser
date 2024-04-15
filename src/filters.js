@@ -38,37 +38,6 @@ function combineConsecutiveTextContents(contentsList) {
 
 function excludeMarkersInUsj(inputUsj, excludeMarkers, combineTexts = true, excludedParent = false) {
   if (typeof inputUsj === 'string') {
-    return excludedParent ? [] : [inputUsj];
-  }
-  let cleanedKids = [];
-  let cleanedMarkers = excludeMarkers.map(marker => marker.replace(trailingNumPattern, ''));
-  let thisMarker = 'marker' in inputUsj ? inputUsj.marker.replace(trailingNumPattern, '') : '';
-  let thisMarkerNeeded = !cleanedMarkers.includes(thisMarker);
-  let innerContentNeeded = thisMarkerNeeded || !MARKERS_WITH_DISCARDABLE_CONTENTS.includes(thisMarker);
-
-  if (innerContentNeeded && "content" in inputUsj) {
-    inputUsj.content.forEach(item => {
-      let cleaned = excludeMarkersInUsj(item, excludeMarkers, combineTexts, !thisMarkerNeeded);
-      if (Array.isArray(cleaned)) {
-        cleanedKids.push(...cleaned);
-      } else {
-        cleanedKids.push(cleaned);
-      }
-    });
-    if (combineTexts) {
-      cleanedKids = combineConsecutiveTextContents(cleanedKids);
-    }
-  }
-
-  if (thisMarkerNeeded) {
-    let cleanedUsj = { ...inputUsj, content: cleanedKids };
-    return cleanedUsj;
-  }
-  return innerContentNeeded ? cleanedKids : [];
-}
-
-function excludeMarkersInUsj(inputUsj, excludeMarkers, combineTexts = true, excludedParent = false) {
-  if (typeof inputUsj === 'string') {
     if (excludedParent && excludeMarkers.includes('text-in-excluded-parent')) {
       return [];
     }

@@ -30,6 +30,9 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
+    "tree-sitter": "^0.21.1",
+    "tree-sitter-javascript": "^0.21.0",
+    "tree-sitter-usfm3": "file:.yalc/tree-sitter-usfm3",
     "ts-node": "^10.9.2"
   }
 }
