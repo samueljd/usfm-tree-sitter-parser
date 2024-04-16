@@ -2,11 +2,28 @@
 // import usfm from "tree-sitter-usfm3";
 // import grammar from "tree-sitter-javascript";
 
-const Parser = require("tree-sitter");
-const usfm = require("tree-sitter-usfm3");
-
+const Parser = require("web-tree-sitter");
+const path = require('path');
+const fs = require('fs');
 const parser = new Parser();
-parser.setLanguage(usfm);
+const langWasmFilePath = path.join(__dirname, 'tree-sitter-usfm3.wasm');
+
+(async () => {
+  try {
+    if (fs.existsSync(langWasmFilePath)) {
+      usfmLanguage = await Parser.Language.load(langWasmFilePath);
+      parser.setLanguage(usfmLanguage);
+      console.log('Language file loaded:', langWasmFilePath)
+    } else {
+      console.log('File does not exist:', langWasmFilePath);
+    }
+  } catch (error) {
+    console.error('Error handling the language file:', error);
+  }
+})();
+
+
+// parser.setLanguage(usfm);
 class USFMParser {
 
   constructor(usfmString) {
@@ -16,16 +33,18 @@ class USFMParser {
     let tree = null;
 
     try {
+      console.log(this.usfm)
       tree = parser.parse(this.usfm);
+      console.log(tree.rootNode)
     } catch (err) {
       console.log(err.toString());
     }
-    this.syntaxTree = tree.rootNode;
+    this.syntaxTree = tree;
   }
 
   toSyntaxTree() {
     console.log(this.usfm);
-    return this.syntaxTree.toString();
+    return this.syntaxTree;
   }
 
   parse() {

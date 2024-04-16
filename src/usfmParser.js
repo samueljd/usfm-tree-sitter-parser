@@ -7,7 +7,7 @@ const { excludeMarkersInUsj, includeMarkersInUsj } = require('./filters');
 const Filter = require('./utils/filter');
 const Format = require('./utils/format');
 // const Parser = require("tree-sitter");node 
-const usfm = require("tree-sitter-usfm3");
+// const usfm = require("tree-sitter-usfm3");
 const path = require('path');
 const fs = require('fs');
 
