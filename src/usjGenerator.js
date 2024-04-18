@@ -138,20 +138,21 @@ class USJGenerator {
           (va (verseNumber) @alt)?
           (vp (text) @vp)?
       )`).captures(node);
-
-    const verseNum = this.usfm.substring(verseNumCap[0][0].startByte, verseNumCap[0][0].endByte);
-
+    console.log("VERSE NUM CAPS ==>", verseNumCap)
+    const verseNum = this.usfm.substring(verseNumCap[0].node.startIndex, verseNumCap[0].node.endIndex);
+    console.log({ verseNum })
     const vJsonObj = {
       type: "verse",
       marker: "v",
       number: verseNum.trim()
     };
 
-    verseNumCap.forEach(tuple => {
-      if (tuple[1] === 'alt') {
+    verseNumCap.forEach(capture => {
+      console.log("CAPTURE ==>", capture)
+      if (capture.name === 'alt') {
         const altNum = this.usfm.substring(tuple[0].startByte, tuple[0].endByte);
         vJsonObj.altnumber = altNum;
-      } else if (tuple[1] === 'vp') {
+      } else if (capture.name === 'vp') {
         const vpText = this.usfm.substring(tuple[0].startByte, tuple[0].endByte).trim();
         vJsonObj.pubnumber = vpText;
       }
@@ -190,14 +191,16 @@ class USJGenerator {
       });
     } else if (node.type === 'paragraph') {
       const paraTagCap = this.usfmLanguage.query("(paragraph (_) @para-marker)").captures(node)[0];
-      const paraMarker = paraTagCap[0].type;
+      const paraMarker = paraTagCap.node.type;
       if (paraMarker === "b") {
         this.nodeToUSJSpecial(paraTagCap[0], parentJsonObj);
       } else if (!paraMarker.endsWith("Block")) {
+        console.log("not block")
         const paraJsonObj = { type: "para", marker: paraMarker, content: [] };
-        paraTagCap[0].children.slice(1).forEach(child => {
+        paraTagCap.node.children.forEach(child => {
           this.nodeToUSJ(child, paraJsonObj);
-        });
+        }
+        );
         parentJsonObj.content.push(paraJsonObj);
       }
     } else if (['pi', "ph"].includes(node.type)) {
@@ -357,16 +360,22 @@ class USJGenerator {
     }
   }
   nodeToUSJGeneric(node, parentJsonObj) {
+
+    console.log("GENERIC ==>", node.type, node, parentJsonObj)
     // Build nodes for para style markers in USJ
     const tagNode = node.children[0];
-    let style = this.usfm.substring(tagNode.startByte, tagNode.endByte);
+    console.log({ tagNode })
+    let style = this.usfm.substring(tagNode.startIndex, tagNode.endIndex);
     if (style.startsWith('\\')) {
       style = style.replace('\\', '').trim();
     } else {
       style = node.type;
     }
+    console.log({ style })
+    // console.log(node.children.length, node.children[0].type, node.children[1].type)
     let childrenRangeStart = 1;
     if (node.children.length > 1 && node.children[1].type.startsWith("numbered")) {
+      console.log("NUMBERED")
       const numNode = node.children[1];
       const num = this.usfm.substring(numNode.startByte, numNode.endByte);
       style += num;
@@ -374,22 +383,24 @@ class USJGenerator {
     }
     const paraJsonObj = { type: "para", marker: style, content: [] };
     parentJsonObj.content.push(paraJsonObj);
-
+    console.log({ paraJsonObj, parentJsonObj })
     for (let i = childrenRangeStart; i < node.children.length; i++) {
       const child = node.children[i];
-      if (this.CHAR_STYLE_MARKERS.includes(child.type) ||
-        this.NESTED_CHAR_STYLE_MARKERS.includes(child.type) ||
+      if (USJGenerator.CHAR_STYLE_MARKERS.includes(child.type) ||
+        USJGenerator.NESTED_CHAR_STYLE_MARKERS.includes(child.type) ||
         ["text", "footnote", "crossref", "verseText", "v", "b", "milestone", "zNameSpace"].includes(child.type)) {
+        console.log("CHILD ==>", child.type, child)
         // Only nest these types inside the upper para style node
         this.nodeToUSJ(child, paraJsonObj);
       } else {
+        console.log("main recurse")
         this.nodeToUSJ(child, parentJsonObj);
       }
     }
   }
 
   nodeToUSJ(node, parentJsonObj) {
-    console.log(node.type)
+    console.log("RECURSE ==>", "TYPE: ", node.type, parentJsonObj)
     // Check each node and based on the type convert to corresponding XML element
     switch (node.type) {
       case "id":
