@@ -60,11 +60,11 @@ class USJGenerator {
     const idCaptures = this.usfmLanguage.query("(id (bookcode) @book-code (description)? @desc)").captures(node);
     let code = null;
     let desc = null;
-    idCaptures.forEach(tuple => {
-      if (tuple[1] === "book-code") {
-        code = this.usfm.slice(tuple[0].startByte, tuple[0].endByte);
-      } else if (tuple[1] === "desc") {
-        desc = this.usfm.slice(tuple[0].startByte, tuple[0].endByte);
+    idCaptures.forEach(capture => {
+      if (capture.name === "book-code") {
+        code = this.usfm.slice(capture.node.startIndex, capture.node.endIndex);
+      } else if (capture.name === "desc") {
+        desc = this.usfm.slice(capture.node.startIndex, capture.node.endIndex);
       }
     });
     const bookJsonObj = {
@@ -85,7 +85,7 @@ class USJGenerator {
     const chapCap = this.usfmLanguage.query(`(c (chapterNumber) @chap-num
                                              (ca (chapterNumber) @alt-num)?
                                              (cp (text) @pub-num)?)`).captures(node);
-    const chapNum = this.usfm.substring(chapCap[0][0].startByte, chapCap[0][0].endByte);
+    const chapNum = this.usfm.slice(chapCap[0].node.startIndex, chapCap[0].node.endIndex);
     let chapRef = null;
     this.jsonRootObj.content.forEach(child => {
       if (child.type === "book") {
@@ -389,36 +389,45 @@ class USJGenerator {
   }
 
   nodeToUSJ(node, parentJsonObj) {
+    console.log(node.type)
     // Check each node and based on the type convert to corresponding XML element
     switch (node.type) {
       case "id":
+        console.log('=====>id')
         this.nodeToUSJId(node, parentJsonObj);
         break;
       case "chapter":
+        console.log('=====>chapter')
         this.nodeToUSJChapter(node, parentJsonObj);
         break;
       case "cl":
       case "cp":
       case "cd":
       case "vp":
+        console.log('=====>Generic3')
         this.nodeToUSJGeneric(node, parentJsonObj);
         break;
       case "ca":
       case "va":
+        console.log('=====>cava')
         this.nodeToUSJCaVa(node, parentJsonObj);
         break;
       case "v":
+        console.log('=====>verse')
         this.nodeToUSJVerse(node, parentJsonObj);
         break;
       case "verseText":
+        console.log('=====>verseText')
         node.children.forEach(child => this.nodeToUSJ(child, parentJsonObj));
         break;
       case "paragraph":
       case "pi":
       case "ph":
+        console.log('=====>para')
         this.nodeToUSJPara(node, parentJsonObj);
         break;
       case "text":
+        console.log('=====>text')
         const textVal = this.usfm.substring(node.startByte, node.endByte).trim();
         if (textVal !== "") {
           parentJsonObj.content.push(textVal);
@@ -426,32 +435,45 @@ class USJGenerator {
         break;
       case "table":
       case "tr":
+        console.log('=====>table')
         this.nodeToUSJTable(node, parentJsonObj);
         break;
       case "milestone":
       case "zNameSpace":
+        console.log('=====>milestone')
         this.nodeToUSJMilestone(node, parentJsonObj);
         break;
       case "esb":
       case "cat":
       case "fig":
       case "usfm":
+        console.log('=====>Special')
         this.nodeToUSJSpecial(node, parentJsonObj);
         break;
       default:
-        if (this.CHAR_STYLE_MARKERS.includes(node.type) || this.NESTED_CHAR_STYLE_MARKERS.includes(node.type) || ["xt_standalone"].includes(node.type)) {
+        console.log('=====>default')
+        // console.log(node.type, this.CHAR_STYLE_MARKERS.includes(node.type));
+        console.log(node.children.length)
+        if (USJGenerator.CHAR_STYLE_MARKERS.includes(node.type) || USJGenerator.NESTED_CHAR_STYLE_MARKERS.includes(node.type) || ["xt_standalone"].includes(node.type)) {
+          console.log("-------->char style")
           this.nodeToUSJChar(node, parentJsonObj);
         } else if (node.type.endsWith("Attribute")) {
+          console.log("-------->attribute")
           this.nodeToUSJAttrib(node, parentJsonObj);
-        } else if (this.PARA_STYLE_MARKERS.includes(node.type) || this.PARA_STYLE_MARKERS.includes(node.type.replace("\\", "").trim())) {
+        } else if (USJGenerator.PARA_STYLE_MARKERS.includes(node.type) || USJGenerator.PARA_STYLE_MARKERS.includes(node.type.replace("\\", "").trim())) {
+          console.log("-------->para style")
           this.nodeToUSJGeneric(node, parentJsonObj);
         } else if (["", "|"].includes(node.type.trim())) {
+          console.log("-------->white space")
           // Skip white space nodes
           break;
         } else if (node.children.length > 0) {
+          console.log("=======>children")
           node.children.forEach(child => this.nodeToUSJ(child, parentJsonObj));
         } else {
+          console.log("-------->UNKNOWN")
           console.error("Encountered unknown element ", node.type);
+
         }
         break;
     }
