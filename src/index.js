@@ -1,2 +1,2 @@
-const USFMParser = require('./parser');
+const USFMParser = require('./parser-wip');
 module.exports = USFMParser;

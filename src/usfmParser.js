@@ -52,7 +52,7 @@ class USFMParser {
   async initializeParser(usfmString, fromUSJ, fromUSX) {
     await Parser.init();
     this.parser = new Parser();
-    const USFMLanguage = await Parser.Language.load(langWasmFilePath);
+    this.USFMLanguage = await Parser.Language.load(langWasmFilePath);
     this.parser.setLanguage(USFMLanguage);
 
     if (usfmString) {
@@ -107,7 +107,7 @@ class USFMParser {
 
     let outputUSJ;
     try {
-      let usjGenerator = new USJGenerator(USFM_LANGUAGE, this.usfmBytes, jsonRootObj); // Assuming USJGenerator is defined elsewhere
+      let usjGenerator = new USJGenerator(this.USFMLanguage, this.usfm, jsonRootObj); // Assuming USJGenerator is defined elsewhere
       usjGenerator.nodeToUSJ(this.syntaxTree, jsonRootObj); // Assuming nodeToUSJ method is properly defined
       outputUSJ = usjGenerator.jsonRootObj;
     } catch (err) {

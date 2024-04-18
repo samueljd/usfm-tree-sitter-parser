@@ -103,10 +103,10 @@ class USJGenerator {
 
     chapCap.forEach(tuple => {
       if (tuple[1] === "alt-num") {
-        chapJsonObj.altnumber = this.usfm.substring(tuple[0].startByte, tuple[0].endByte).trim();
+        chapJsonObj.altnumber = this.usfm.substring(tuple[0].startIndex, tuple[0].endIndex).trim();
       }
       if (tuple[1] === "pub-num") {
-        chapJsonObj.pubnumber = this.usfm.substring(tuple[0].startByte, tuple[0].endByte).trim();
+        chapJsonObj.pubnumber = this.usfm.substring(tuple[0].startIndex, tuple[0].endIndex).trim();
       }
     });
 
@@ -150,14 +150,14 @@ class USJGenerator {
     verseNumCap.forEach(capture => {
       console.log("CAPTURE ==>", capture)
       if (capture.name === 'alt') {
-        const altNum = this.usfm.substring(tuple[0].startByte, tuple[0].endByte);
+        const altNum = this.usfm.slice(capture.node.startIndex, capture.node.endIndex);
         vJsonObj.altnumber = altNum;
       } else if (capture.name === 'vp') {
-        const vpText = this.usfm.substring(tuple[0].startByte, tuple[0].endByte).trim();
+        const vpText = this.usfm.substring(capture.node.startIndex, capture.node.endIndex);
         vJsonObj.pubnumber = vpText;
       }
     });
-
+    console.log("KKKKKKKKKKKKKKKKKK", { vJsonObj })
     const ref = `${this.findLastFromJson(this.jsonRootObj, "chapter").sid}:${verseNum}`;
     vJsonObj.sid = ref.trim();
 
@@ -165,6 +165,7 @@ class USJGenerator {
   }
 
   nodeToUSJCaVa(node, parentJsonObj) {
+    console.log("CAVA ==>", node.type, node)
     // Build elements for independent ca and va away from c and v
     const style = node.type;
     const charJsonObj = {
@@ -175,25 +176,31 @@ class USJGenerator {
     const altNumMatch = this.usfmLanguage.query(`([
         (chapterNumber)
         (verseNumber)
-    ] @alt-num)`).captures(node)[0];
-
-    const altNum = this.usfm.substring(altNumMatch[0].startByte, altNumMatch[0].endByte).trim();
+    ] @alt-num)`).captures(node);
+    console.log("ALTN ==>", altNumMatch, altNumMatch[0].node.startIndex, altNumMatch[0].node.endIndex)
+    const altNum = this.usfm.slice(altNumMatch[0].node.startIndex, altNumMatch[0].node.endIndex).trim();
 
     charJsonObj.altnumber = altNum;
     parentJsonObj.content.push(charJsonObj);
   }
 
   nodeToUSJPara(node, parentJsonObj) {
+    console.log("PARA ==>", node.type, node, parentJsonObj)
+    console.log("OOOOOOOOOOOOOO", node.children[0].type, node.children[0])
     // Build paragraph nodes in USJ
     if (node.children[0].type.endsWith('Block')) {
+
       node.children[0].children.forEach(child => {
         this.nodeToUSJPara(child, parentJsonObj);
       });
     } else if (node.type === 'paragraph') {
+      console.log("paragraph ==>", node.type, node, parentJsonObj)
       const paraTagCap = this.usfmLanguage.query("(paragraph (_) @para-marker)").captures(node)[0];
       const paraMarker = paraTagCap.node.type;
+      console.log({ paraMarker })
       if (paraMarker === "b") {
-        this.nodeToUSJSpecial(paraTagCap[0], parentJsonObj);
+        console.log("b marker", paraTagCap)
+        this.nodeToUSJSpecial(paraTagCap, parentJsonObj);
       } else if (!paraMarker.endsWith("Block")) {
         console.log("not block")
         const paraJsonObj = { type: "para", marker: paraMarker, content: [] };
@@ -204,7 +211,7 @@ class USJGenerator {
         parentJsonObj.content.push(paraJsonObj);
       }
     } else if (['pi', "ph"].includes(node.type)) {
-      const paraMarker = this.usfm.substring(node.children[0].startByte, node.children[0].endByte).replace("\\", "").trim();
+      const paraMarker = this.usfm.substring(node.children[0].startIndex, node.children[0].endIndex).replace("\\", "").trim();
       const paraJsonObj = { type: "para", marker: paraMarker, content: [] };
       node.children.slice(1).forEach(child => {
         this.nodeToUSJ(child, paraJsonObj);
@@ -217,14 +224,14 @@ class USJGenerator {
     // Build USJ nodes for footnotes and cross-references
     const tagNode = node.children[0];
     const callerNode = node.children[1];
-    const style = this.usfm.substring(tagNode.startByte, tagNode.endByte).replace("\\", "").trim();
+    const style = this.usfm.substring(tagNode.startIndex, tagNode.endIndex).replace("\\", "").trim();
     const noteJsonObj = {
       type: "note",
       marker: style,
       content: []
     };
 
-    noteJsonObj.caller = this.usfm.substring(callerNode.startByte, callerNode.endByte).trim();
+    noteJsonObj.caller = this.usfm.substring(callerNode.startIndex, callerNode.endIndex).trim();
 
     for (let i = 2; i < node.children.length - 1; i++) {
       this.nodeToUSJ(node.children[i], noteJsonObj);
@@ -240,7 +247,7 @@ class USJGenerator {
     if (node.children[node.children.length - 1].type.startsWith('\\')) {
       childrenRange -= 1; // Exclude the last node if it starts with '\', treating it as a closing node
     }
-    const style = this.usfm.substring(tagNode.startByte, tagNode.endByte)
+    const style = this.usfm.substring(tagNode.startIndex, tagNode.endIndex)
       .replace("\\", "").replace("+", "").trim();
     const charJsonObj = {
       type: "char",
@@ -272,9 +279,9 @@ class USJGenerator {
         this.nodeToUSJ(child, rowJsonObj);
       });
       parentJsonObj.content.push(rowJsonObj);
-    } else if (this.TABLE_CELL_MARKERS.includes(node.type)) {
+    } else if (USJGenerator.TABLE_CELL_MARKERS.includes(node.type)) {
       const tagNode = node.children[0];
-      const style = this.usfm.substring(tagNode.startByte, tagNode.endByte).replace("\\", "").trim();
+      const style = this.usfm.substring(tagNode.startIndex, tagNode.endIndex).replace("\\", "").trim();
       const cellJsonObj = { type: "table:cell", marker: style, content: [], align: style.includes("r") ? "end" : "start" };
       node.children.slice(1).forEach(child => {
         this.nodeToUSJ(child, cellJsonObj);
@@ -284,22 +291,24 @@ class USJGenerator {
   }
 
   nodeToUSJAttrib(node, parentJsonObj) {
+    console.log("ATTRIB ==>", node.type, node, parentJsonObj)
     // Add attribute values to USJ elements
     const attribNameNode = node.children[0];
-    let attribName = this.usfm.substring(attribNameNode.startByte, attribNameNode.endByte).trim();
-
+    let attribName = this.usfm.slice(attribNameNode.startIndex, attribNameNode.endIndex).trim();
+    console.log({ attribName })
     // Handling special cases for attribute names
     if (attribName === "|") {
-      attribName = this.DEFAULT_ATTRIB_MAP[node.parent.type];
+      attribName = USJGenerator.DEFAULT_ATTRIB_MAP[node.parent.type];
     }
     if (attribName === "src") { // for \fig
       attribName = "file";
     }
 
     const attribValCap = this.usfmLanguage.query("((attributeValue) @attrib-val)").captures(node);
+    console.log({ attribValCap })
     let attribValue = "";
     if (attribValCap.length > 0) {
-      attribValue = this.usfm.substring(attribValCap[0][0].startByte, attribValCap[0][0].endByte).trim();
+      attribValue = this.usfm.substring(attribValCap[0].node.startIndex, attribValCap[0].node.endIndex).trim();
     }
 
     parentJsonObj[attribName] = attribValue;
@@ -307,16 +316,18 @@ class USJGenerator {
 
   nodeToUSJMilestone(node, parentJsonObj) {
     // Create ms node in USJ
+    console.log("MILESTONE ==>", node.type, node)
     const msNameCap = this.usfmLanguage.query(`(
         [(milestoneTag)
          (milestoneStartTag)
          (milestoneEndTag)
          (zSpaceTag)
          ] @ms-name)`).captures(node)[0];
-    const style = this.usfm.substring(msNameCap[0].startByte, msNameCap[0].endByte)
+    console.log({ msNameCap })
+    const style = this.usfm.slice(msNameCap.node.startIndex, msNameCap.node.endIndex)
       .replace("\\", "").trim();
     const msJsonObj = { type: "ms", marker: style, content: [] };
-
+    console.log({ msJsonObj })
     node.children.forEach(child => {
       if (child.type.endsWith("Attribute")) {
         this.nodeToUSJ(child, msJsonObj);
@@ -333,6 +344,7 @@ class USJGenerator {
 
   nodeToUSJSpecial(node, parentJsonObj) {
     // Build nodes for esb, cat, fig, optbreak in USJ
+    console.log("SPECIAL ==>", node.type, node)
     if (node.type === "esb") {
       const sidebarJsonObj = { type: "sidebar", marker: "esb", content: [] };
       node.children.slice(1, -1).forEach(child => {
@@ -341,7 +353,7 @@ class USJGenerator {
       parentJsonObj.content.push(sidebarJsonObj);
     } else if (node.type === "cat") {
       const catCap = this.usfmLanguage.query('((category) @category)').captures(node)[0];
-      const category = this.usfm.substring(catCap[0].startByte, catCap[0].endByte).trim();
+      const category = this.usfm.substring(catCap[0].startIndex, catCap[0].endIndex).trim();
       parentJsonObj.category = category;
     } else if (node.type === 'fig') {
       const figJsonObj = { type: "figure", marker: "fig", content: [] };
@@ -354,7 +366,7 @@ class USJGenerator {
       parentJsonObj.content.push(bJsonObj);
     } else if (node.type === "usfm") {
       const verJsonObj = { type: "para", marker: "usfm", content: [] };
-      const version = this.usfm.substring(node.startByte, node.endByte).replace("\\usfm", "").trim();
+      const version = this.usfm.substring(node.startIndex, node.endIndex).replace("\\usfm", "").trim();
       verJsonObj.content.push(version);
       parentJsonObj.content.push(verJsonObj);
     }
@@ -377,7 +389,7 @@ class USJGenerator {
     if (node.children.length > 1 && node.children[1].type.startsWith("numbered")) {
       console.log("NUMBERED")
       const numNode = node.children[1];
-      const num = this.usfm.substring(numNode.startByte, numNode.endByte);
+      const num = this.usfm.substring(numNode.startIndex, numNode.endIndex);
       style += num;
       childrenRangeStart = 2;
     }
@@ -439,7 +451,7 @@ class USJGenerator {
         break;
       case "text":
         console.log('=====>text')
-        const textVal = this.usfm.substring(node.startByte, node.endByte).trim();
+        const textVal = this.usfm.substring(node.startIndex, node.endIndex).trim();
         if (textVal !== "") {
           parentJsonObj.content.push(textVal);
         }
@@ -463,7 +475,7 @@ class USJGenerator {
         break;
       default:
         console.log('=====>default')
-        // console.log(node.type, this.CHAR_STYLE_MARKERS.includes(node.type));
+        console.log(node.type, node);
         console.log(node.children.length)
         if (USJGenerator.CHAR_STYLE_MARKERS.includes(node.type) || USJGenerator.NESTED_CHAR_STYLE_MARKERS.includes(node.type) || ["xt_standalone"].includes(node.type)) {
           console.log("-------->char style")
@@ -481,11 +493,12 @@ class USJGenerator {
         } else if (node.children.length > 0) {
           console.log("=======>children")
           node.children.forEach(child => this.nodeToUSJ(child, parentJsonObj));
-        } else {
-          console.log("-------->UNKNOWN")
-          console.error("Encountered unknown element ", node.type);
-
         }
+        //  else {
+        //   console.log("-------->UNKNOWN")
+        //   console.error("Encountered unknown element ", node.type);
+
+        // }
         break;
     }
   }
