@@ -9,10 +9,13 @@ const testCases = require('./testFiles/test');
 class USFMParser {
   static async init() {
     await Parser.init();
-    // this.USFMLanguage = await Parser.Language.load(path.join(__dirname, 'tree-sitter-usfm3.wasm'));
-    const wasmPath = path.join(__dirname, 'tree-sitter-usfm3.wasm');
-    const wasmBuffer = fs.readFileSync(wasmPath);
-    this.USFMLanguage = await Parser.Language.load(wasmBuffer);
+    this.USFMLanguage = await Parser.Language.load(path.join(__dirname, 'tree-sitter-usfm3.wasm'));
+
+    //another way to load wasm file
+
+    // const wasmPath = path.join(__dirname, 'tree-sitter-usfm3.wasm');
+    // const wasmBuffer = fs.readFileSync(wasmPath);
+    // this.USFMLanguage = await Parser.Language.load(wasmBuffer);
   }
 
   constructor(usfmString = null, fromUSJ = null, fromUSX = null) {
@@ -113,15 +116,14 @@ class USFMParser {
   }
 }
 
-// module.exports = USFMParser;
+module.exports = USFMParser;
 
-(async () => {
-  await USFMParser.init();
-  const usfmParser = new USFMParser(testCases.cat);
-  // const output = usfmParser.toUSJ()
-  console.log(usfmParser.parseUSFM())
-  // output ? console.log(output, output.content[2].content, "YESSSS!") : console.log('NOOOOO');
-})();
+// (async () => {
+//   await USFMParser.init();
+//   const usfmParser = new USFMParser(testCases.rem_under_one_h_marker);
+//   // const output = usfmParser.toUSJ()
+//   console.log(usfmParser.parseUSFM())
+// })();
 
 // (async () => {
 //   await USFMParser.init();
